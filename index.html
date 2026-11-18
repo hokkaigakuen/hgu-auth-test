@@ -56,8 +56,25 @@ try{
  const provider=new GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
  $('login').onclick=async()=>{try{show('Googleログイン処理中…');await signInWithPopup(auth,provider)}catch(e){show('ログイン失敗: '+e.code+'\n'+e.message)}};
  $('logout').onclick=async()=>{try{await signOut(auth)}catch(e){show('ログアウト失敗: '+e.message)}};
+ $('testApproval').onclick=async()=>{
+  const output=$('approvalStatus'),button=$('testApproval'),user=auth.currentUser;
+  if(!user){output.textContent='ログインが必要です。';return;}
+  button.disabled=true;output.textContent='Firebase承認確認中…';
+  try{
+   const idToken=await user.getIdToken();
+   const response=await fetch(apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({action:'checkApproval',idToken})});
+   const body=await response.text();
+   let data;try{data=JSON.parse(body)}catch{throw new Error('JSON応答を読み取れませんでした（HTTP '+response.status+'）')}
+   if(!response.ok){output.textContent='HTTP '+response.status+'：サーバーエラー';return;}
+   if(data.success===false){output.textContent='HTTP '+response.status+'\nApps Scriptで認証または承認確認に失敗しました。';return;}
+   const result=data.result;
+   output.textContent='HTTP '+response.status+'\n承認確認結果：'+(result?.approved===true?'承認済み':result?.approved===false?'未承認':'応答形式を確認してください')+'\n※IDトークンは表示しません。';
+  }catch(e){output.textContent='通信または処理エラー：'+e.message+'\n※CORS等の可能性があります。';}
+  finally{button.disabled=!auth.currentUser;}
+ };
  onAuthStateChanged(auth,async user=>{
   $('login').disabled=!!user;$('logout').disabled=!user;
+  $('testApproval').disabled=!user;
   if(!user){show('未ログインです。Googleでログインを押してください。');return}
   show('ログイン成功\nメール: '+(user.email||'不明')+'\nUID: '+user.uid+'\n承認状態: 確認中…');
   try{const snap=await getDoc(doc(db,'approvedUsers',user.uid));
