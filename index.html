@@ -8,7 +8,7 @@
 :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#e9f1ff;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}main{max-width:650px;margin:40px auto;padding:22px}.panel{background:#15233a;border:1px solid #304460;border-radius:16px;padding:24px}h1{font-size:1.5rem}p{line-height:1.7;color:#b7c8df}button{border:0;border-radius:9px;padding:13px 18px;margin:6px 6px 6px 0;background:#4d8df7;color:white;font-weight:700;cursor:pointer}button:disabled{opacity:.5;cursor:default}#logout{background:#435570}pre{white-space:pre-wrap;word-break:break-all;background:#0b1627;padding:14px;border-radius:8px;line-height:1.7}small{color:#9db1ce}
 </style>
 </head>
-<body><main><section class="panel"><h1>HGU-Lab｜認証テスト</h1><p>Firebase Googleログインと、Firestoreの承認情報を読み取り専用で確認します。</p><button id="login" disabled>Googleでログイン</button><button id="logout" disabled>ログアウト</button><button id="testApi">Apps Script通信テスト</button><button id="testPost">POST通信テスト（登録なし）</button><button id="testApproval" disabled>Firebase承認確認テスト</button><pre id="status">初期化中…</pre><pre id="apiStatus">通信テストは未実行です。</pre><pre id="postStatus">POSTテストは未実行です。</pre><pre id="approvalStatus">Firebase承認確認テストは未実行です。</pre><small>UIDやIDトークンを他人に送らないでください。招待コード入力・承認登録はこのテストでは行いません。</small></section></main>
+<body><main><section class="panel"><h1>HGU-Lab｜認証テスト</h1><p>Firebase Googleログインと、Firebase認証、承認状態の確認、招待コードによるテスト承認を行います。</p><button id="login" disabled>Googleでログイン</button><button id="logout" disabled>ログアウト</button><button id="testApi">Apps Script通信テスト</button><button id="testPost">POST通信テスト（登録なし）</button><button id="testApproval" disabled>Firebase承認確認テスト</button><div id="inviteArea" style="margin-top:16px;padding:14px;border:1px solid #304460;border-radius:10px"><label for="inviteCode">招待コード（テスト用アカウントのみ）</label><input id="inviteCode" type="password" autocomplete="off" placeholder="招待コードを入力" style="display:block;width:100%;margin:10px 0;padding:12px;background:#0b1627;border:1px solid #50627e;border-radius:8px;color:white"><button id="approveUser" disabled>招待コードで承認登録</button><pre id="inviteStatus">承認登録は未実行です。</pre></div><pre id="status">初期化中…</pre><pre id="apiStatus">通信テストは未実行です。</pre><pre id="postStatus">POSTテストは未実行です。</pre><pre id="approvalStatus">Firebase承認確認テストは未実行です。</pre><small>UIDやIDトークンを他人に送らないでください。招待コードは画面やログに表示しません。テスト用アカウント以外では承認登録しないでください。</small></section></main>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -74,7 +74,7 @@ try{
  };
  onAuthStateChanged(auth,async user=>{
   $('login').disabled=!!user;$('logout').disabled=!user;
-  $('testApproval').disabled=!user;
+  $('testApproval').disabled=!user; $('approveUser').disabled=!user;
   if(!user){show('未ログインです。Googleでログインを押してください。');return}
   show('ログイン成功\nメール: '+(user.email||'不明')+'\nUID: '+user.uid+'\n承認状態: 確認中…');
   try{const snap=await getDoc(doc(db,'approvedUsers',user.uid));
