@@ -72,6 +72,28 @@ try{
   }catch(e){output.textContent='通信または処理エラー：'+e.message+'\n※CORS等の可能性があります。';}
   finally{button.disabled=!auth.currentUser;}
  };
+ $('approveUser').onclick=async()=>{
+  const button=$('approveUser'),output=$('inviteStatus'),user=auth.currentUser;
+  if(!user){output.textContent='Googleログインが必要です。';return;}
+  const inviteCode=$('inviteCode').value;
+  if(!inviteCode){output.textContent='招待コードを入力してください。';return;}
+  button.disabled=true;output.textContent='承認登録処理中…';
+  try{
+   const idToken=await user.getIdToken();
+   const response=await fetch(apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({action:'approveUser',idToken,inviteCode})});
+   const body=await response.text();
+   let data;try{data=JSON.parse(body)}catch{throw new Error('JSON応答を読み取れませんでした（HTTP '+response.status+'）');}
+   if(!response.ok||data.success!==true||data.result?.approved!==true){output.textContent='承認登録できませんでした（HTTP '+response.status+'）。招待コードまたはApps Scriptの設定を確認してください。';return;}
+   $('inviteCode').value='';
+   output.textContent='承認APIは成功しました。Firestoreを確認中…';
+   const snap=await getDoc(doc(db,'approvedUsers',user.uid));
+   if(snap.exists()&&snap.data().approved===true&&snap.data().uid===user.uid&&snap.data().email===user.email&&snap.data().role==='player'){
+    output.textContent='承認登録成功！Firestoreに承認情報を確認できました。';
+    show('ログイン成功\n承認状態: 承認済み\nrole: player');
+   }else{output.textContent='承認APIは成功しましたが、Firestoreの承認情報を確認できませんでした。';}
+  }catch(e){output.textContent='承認処理または確認でエラー: '+e.message+'\n※通信エラー時は登録済みの可能性もあるため、連続で押さずFirestoreを確認してください。';}
+  finally{button.disabled=!auth.currentUser;}
+ };
  onAuthStateChanged(auth,async user=>{
   $('login').disabled=!!user;$('logout').disabled=!user;
   $('testApproval').disabled=!user; $('approveUser').disabled=!user;
