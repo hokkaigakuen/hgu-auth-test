@@ -8,7 +8,7 @@
 :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#e9f1ff;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif}main{max-width:650px;margin:40px auto;padding:22px}.panel{background:#15233a;border:1px solid #304460;border-radius:16px;padding:24px}h1{font-size:1.5rem}p{line-height:1.7;color:#b7c8df}button{border:0;border-radius:9px;padding:13px 18px;margin:6px 6px 6px 0;background:#4d8df7;color:white;font-weight:700;cursor:pointer}button:disabled{opacity:.5;cursor:default}#logout{background:#435570}pre{white-space:pre-wrap;word-break:break-all;background:#0b1627;padding:14px;border-radius:8px;line-height:1.7}small{color:#9db1ce}
 </style>
 </head>
-<body><main><section class="panel"><h1>HGU-Lab｜認証テスト</h1><p>Firebase Googleログインと、Firestoreの承認情報を読み取り専用で確認します。</p><button id="login" disabled>Googleでログイン</button><button id="logout" disabled>ログアウト</button><button id="testApi">Apps Script通信テスト</button><pre id="status">初期化中…</pre><pre id="apiStatus">通信テストは未実行です。</pre><small>UIDやIDトークンを他人に送らないでください。招待コード入力・承認登録はこのテストでは行いません。</small></section></main>
+<body><main><section class="panel"><h1>HGU-Lab｜認証テスト</h1><p>Firebase Googleログインと、Firestoreの承認情報を読み取り専用で確認します。</p><button id="login" disabled>Googleでログイン</button><button id="logout" disabled>ログアウト</button><button id="testApi">Apps Script通信テスト</button><button id="testPost">POST通信テスト（登録なし）</button><pre id="status">初期化中…</pre><pre id="apiStatus">通信テストは未実行です。</pre><pre id="postStatus">POSTテストは未実行です。</pre><small>UIDやIDトークンを他人に送らないでください。招待コード入力・承認登録はこのテストでは行いません。</small></section></main>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
@@ -24,6 +24,23 @@ const firebaseConfig={
 };
 const $=id=>document.getElementById(id);const show=s=>$('status').textContent=s;
 const apiUrl='https://script.google.com/macros/s/AKfycbz6r9brPWVCpEOcZSyweoK4etCJ2_OkkEWjceUaOQO0VP-Z99yW9idg4CcJARi2cII5Aw/exec';
+$('testPost').onclick=async()=>{
+ const output=$('postStatus');output.textContent='POST通信中…';
+ $('testPost').disabled=true;
+ try{
+  // 無効な固定トークンを使い、承認登録を行わない確認専用リクエスト。
+  // text/plainでプリフライトを避けられても、レスポンスのCORS許可は別途必要。
+  const response=await fetch(apiUrl,{
+   method:'POST',redirect:'follow',
+   headers:{'Content-Type':'text/plain;charset=UTF-8'},
+   body:JSON.stringify({action:'checkApproval',idToken:'invalid-test-token'})
+  });
+  const body=await response.text();
+  output.textContent='HTTP '+response.status+'\n'+body.slice(0,700)+'\n※成功応答ではなく認証拒否が期待結果です。';
+ }catch(e){
+  output.textContent='POST応答を読み取れませんでした。\n'+e.message+'\n※ CORS、リダイレクト、通信失敗などの可能性があります。送信到達の有無はこの結果だけでは判断できません。';
+ }finally{$('testPost').disabled=false}
+};
 $('testApi').onclick=async()=>{
  const output=$('apiStatus');output.textContent='通信中…';
  try{
